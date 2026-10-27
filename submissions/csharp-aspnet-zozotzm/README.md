@@ -7,6 +7,10 @@ protocol, no unsafe code, no response caching.
 This is the "normal tools" entry. The separate `csharp-aspnet-multiprocess-zozotzm` folder is the more
 aggressive experiment (multiple Kestrel processes, custom auth handler, pooled JSON writer).
 
+A single Kestrel process is also how Microsoft's eShop reference app, Jellyfin and Bitwarden run: one
+ASP.NET Core host per box or container. Source-generated JSON is a standard STJ feature, not a
+benchmark-only path; `Results.Json` and `ResponseCompression` are the same APIs these apps use.
+
 ## What is different from `examples/csharp`
 
 | Area | Example | Here |
