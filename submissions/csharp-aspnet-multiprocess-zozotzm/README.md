@@ -131,8 +131,9 @@ connection distribution uneven (one worker at 100%, others ~70%) and inline comp
 At the scoring think-time (`5,000` users, `-think-scale 2.5`) all variants are underloaded and tie at
 ~210 req/s.
 
-CPU profile at 20k users: server ~4.6 cores (4 workers), Postgres ~6.0 cores, mload ~1.6 cores, GC pause
-~0.7% of one core. The local bottleneck is the database and server CPU, not GC.
+CPU profile at 20k users: server ~4.6 cores total (4 workers), Postgres ~6.0 cores, mload ~1.6
+cores, GC pause ~0.7% of a core per worker (~2.8% total). The local bottleneck is the database and
+server CPU, not GC.
 
 The remaining uncertainty is real: the local boxes are not the benchmark boxes, and no one has run this
 at 660k–1M yet. The 1M estimate above is an extrapolation.
