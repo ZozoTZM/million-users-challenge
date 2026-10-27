@@ -65,9 +65,27 @@ Run on Linux (Ubuntu 24.04 WSL, .NET SDK 10.0.403, PostgreSQL 16), not on the be
   naming are correct.
 - The Aspire dev host builds against this project; `test/run.sh` is the stronger check.
 
-No benchmark result is claimed. On a local box this conventional variant is expected to be close to the
-example; the larger structural changes live in the multiprocess variant and, later, the GenHTTP/ioxide
-entry.
+### Local A/B (not the benchmark box)
+
+20,000 users, `-gzip -think-scale 0.1`, 30 s ramp, 60 s hold, tuned local PostgreSQL 16, everything on
+one 16-core / 16 GB WSL box. The load generator, server and Postgres share the same cores, so this is a
+stress comparison, not a capacity result.
+
+| Variant | req/s | p95 | p99 |
+|---|---:|---:|---:|
+| baseline example | 14,153 | 355 ms | 442 ms |
+| this submission | 14,280 | 370 ms | 494 ms |
+
+At the scoring think-time (`5,000` users, `-think-scale 2.5`) both are underloaded: baseline 209 req/s,
+this submission 208 req/s, p95 ~2.1 ms.
+
+The profile at 20k users is roughly: server 4.6 vs 4.9 cores, Postgres 5.0 vs 6.3 cores, mload 1.5 vs
+1.7 cores, GC pause ~3.2% of one core in both. The local bottleneck is the database and server CPU, not
+GC; source generation did not produce a clear throughput win here, but it removes reflection from the
+hot path and is a low-risk modern default. The multiprocess variant (4 workers, inline completions off)
+is faster locally at this stress load, but it is a separate submission.
+
+These are local stress numbers, not a claim about the 16-core benchmark boxes or 1M connections.
 
 ## Build and run
 
