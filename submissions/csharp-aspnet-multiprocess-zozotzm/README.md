@@ -3,6 +3,11 @@
 The challenge feed API on the standard C# stack: **ASP.NET Core / Kestrel, Npgsql, System.Text.Json**.
 No hand-written HTTP, no custom Postgres protocol, no unsafe code, no caching.
 
+This is deliberately **not** the usual C# deployment shape. Microsoft's eShop, Jellyfin and Bitwarden
+all run one ASP.NET Core host per box or container. The conventional submission is
+`csharp-aspnet-zozotzm`; this folder exists to test whether process-level heap isolation and fewer
+per-request allocations move the 1M-connection ceiling.
+
 This is the `examples/csharp` server with the deployment shape and the allocation discipline changed.
 The benchmark holds ~1,000,000 keep-alive sockets while serving only ~42,000 requests/s, so the score is
 dominated by per-connection memory, GC pauses, and CPU per request — not by raw request throughput.
