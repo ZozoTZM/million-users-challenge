@@ -9,14 +9,16 @@ export DOTNET_CLI_TELEMETRY_OPTOUT=1
 export DOTNET_gcServer="${DOTNET_gcServer:-1}"
 export DOTNET_TieredPGO="${DOTNET_TieredPGO:-1}"
 export DOTNET_GCNoAffinitize="${DOTNET_GCNoAffinitize:-1}"
-export DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS="${DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS:-1}"
+# Local A/B: inline completions made this workload slower; default off.
+export DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS="${DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS:-0}"
 
 cores="$(nproc 2>/dev/null || getconf _NPROCESSORS_ONLN 2>/dev/null || echo 1)"
-workers="${WORKERS:-$(( cores < 8 ? cores : 8 ))}"
+# Local A/B: 4 workers beat 8 (8 workers unevenly pinned one core and added ~20% CPU/request).
+workers="${WORKERS:-$(( cores < 4 ? cores : 4 ))}"
 [ "$workers" -lt 1 ] && workers=1
 [ "$workers" -gt "$cores" ] && workers="$cores"
 
-# One bounded heap per worker. Keeping the sum below the box's RAM is what lets many idle
+# One bounded heap budget per worker. Keeping the sum below the box's RAM is what lets many idle
 # keep-alive connections coexist with request garbage without a global GC death spiral.
 mem_kb="$(awk '/^MemTotal:/ { print $2 }' /proc/meminfo)"
 total_heap_pct="${TOTAL_HEAP_PCT:-80}"

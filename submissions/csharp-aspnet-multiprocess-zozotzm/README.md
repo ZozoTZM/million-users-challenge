@@ -16,8 +16,8 @@ dominated by per-connection memory, GC pauses, and CPU per request — not by ra
 
 | Area | Example | Here |
 |---|---|---|
-| Process model | one Kestrel process | up to 8 Kestrel processes, `SO_REUSEPORT` on both ports |
-| Heap | one Server GC heap, 70% hard limit | a bounded heap budget per worker (2 GC heaps each at 16 cores / 8 workers), 80% of RAM total |
+| Process model | one Kestrel process | 4 Kestrel processes by default (`WORKERS` overrides), `SO_REUSEPORT` on both ports |
+| Heap | one Server GC heap, 70% hard limit | a bounded heap budget per worker (4 GC heaps each at 16 cores / 4 workers), 80% of RAM total |
 | Responses | `Results.Json` + `ResponseCompression` (gzip on everything) | pooled buffer + `Utf8JsonWriter` + one async `Content-Length` write; gzip only for `/feed` |
 | JSON | reflection serializer, default encoder | `Utf8JsonWriter`, `UnsafeRelaxedJsonEscaping`, `SkipValidation` |
 | Auth | `JwtBearer` / IdentityModel | small `AuthenticationHandler` using `HMACSHA256` + `Base64Url` + `JsonDocument` |
@@ -64,12 +64,14 @@ The changes above attack those three in order:
 
 ## Process / GC / pool model
 
-- `WORKERS` defaults to `min(nproc, 8)`: 8 at 16 cores, 8 at 8, 4 at 4, 1 at 1. `nproc` follows the
-  affinity mask, so this also works when the benchmark runs the app on 8 or 4 cores.
+- `WORKERS` defaults to `min(nproc, 4)`: 4 at 16 or 8 cores, 4 at 4, 1 at 1. `nproc` follows the
+  affinity mask, so this also works when the benchmark runs the app on 8 or 4 cores. The local A/B
+  found 4 workers faster than 8 at high request rate; `WORKERS=8` is still available.
 - `start.sh` computes one hard heap limit per worker: `MemTotal × 80% / workers`. At 16 cores / 8
   workers on a 31 GB box that is about 3.1 GB per worker, 24.8 GB total. `TOTAL_HEAP_PCT` overrides 80.
-- `DOTNET_GCHeapCount = cores / workers` (2 at 16 cores / 8 workers, 1 otherwise), and
-  `DOTNET_GCNoAffinitize=1`.
+- `DOTNET_GCHeapCount = cores / workers` (4 at 16 cores / 4 workers, 1 at 4/4), and
+  `DOTNET_GCNoAffinitize=1`. `DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS=0` by default; turning it
+  on was slower locally.
 - `DB_POOL` is the **total** across workers, default `min(256, 16 × cores)`. Each worker gets a
   `DB_POOL / workers` slice, split 3:1 into read and write pools. At 16 cores: 256 total = 192 read +
   64 write. `DB_POOL_READ` / `DB_POOL_WRITE` override the per-process split.
@@ -96,8 +98,8 @@ The changes above attack those three in order:
 All of this was run locally, not on the 16-core benchmark boxes.
 
 - Exact CI path in Linux (Ubuntu 24.04 WSL, .NET SDK 10.0.403, PostgreSQL 16):
-  `PORT=3300 EXTRA_PORT=3301 bash test/run.sh submissions/csharp-aspnet-multiprocess-zozotzm`
-  → **passed=42 failed=0**, with the default 8 workers.
+  `WORKERS=4 PORT=3600 EXTRA_PORT=3601 bash test/run.sh submissions/csharp-aspnet-multiprocess-zozotzm`
+  → **passed=42 failed=0**, with the default 4 workers.
 - Same suite against the Aspire dev host (single worker, PostgreSQL 18 container): **42/42**.
 - Same suite against a 2-worker Linux run: **42/42**; `ss -ltnp` shows two Kestrel processes listening
   on each of the two ports (SO_REUSEPORT working).
@@ -105,13 +107,32 @@ All of this was run locally, not on the 16-core benchmark boxes.
   idle for 80 s served its next request on the same socket.
 - `/feed` with `Accept-Encoding: gzip` decompresses to the exact golden JSON; `Content-Length` is the
   compressed length; port 81 serves the same bytes as port 80.
-- `mload -users 5000 -gzip -think-scale 2.5` (2 workers, PostgreSQL and mload on the same WSL box):
-  `RESULT users=5000 req/s=264 p95=1.9ms p99=2.4ms err=0.000% pass=true`.
-- 20,000 users on 2 workers reached ~10.4k req/s but failed p95 on that box (p95 ~1.0 s). The load
-  generator, server and Postgres were all on the same WSL machine, so this is not a capacity result.
 - **Idle memory:** 20,000 idle keep-alive connections after one `/health` each, 2 workers:
   server RSS went from 171 MB to 520 MB, i.e. **~17.8 KB per idle connection**. At 1M that is ~18 GB
   of server RSS, before kernel socket memory. This is the number the design is optimizing.
+
+### Local A/B (not the benchmark box)
+
+20,000 users, `-gzip -think-scale 0.1`, 30 s ramp, 60 s hold, tuned local PostgreSQL 16, everything on
+one 16-core / 16 GB WSL box. The load generator, server and Postgres share the same cores, so this is a
+stress comparison, not a capacity result.
+
+| Variant | req/s | p95 | p99 |
+|---|---:|---:|---:|
+| baseline example | 14,153 | 355 ms | 442 ms |
+| single-process submission | 14,280 | 370 ms | 494 ms |
+| 8 workers, inline completions on | 12,676 | 862 ms | 1116 ms |
+| 8 workers, inline completions off | 14,328 | 509 ms | 686 ms |
+| 4 workers, inline completions on | 13,779 | 627 ms | 897 ms |
+| **4 workers, inline completions off (default)** | **15,432** | **352 ms** | **479 ms** |
+
+The 4-worker default is why this folder can beat the baseline locally; 8 workers made `SO_REUSEPORT`
+connection distribution uneven (one worker at 100%, others ~70%) and inline completions added latency.
+At the scoring think-time (`5,000` users, `-think-scale 2.5`) all variants are underloaded and tie at
+~210 req/s.
+
+CPU profile at 20k users: server ~4.6 cores (4 workers), Postgres ~6.0 cores, mload ~1.6 cores, GC pause
+~0.7% of one core. The local bottleneck is the database and server CPU, not GC.
 
 The remaining uncertainty is real: the local boxes are not the benchmark boxes, and no one has run this
 at 660k–1M yet. The 1M estimate above is an extrapolation.
@@ -130,7 +151,7 @@ Optional knobs:
 
 | Env | Default | Meaning |
 |---|---|---|
-| `WORKERS` | `min(nproc, 8)` | number of Kestrel processes |
+| `WORKERS` | `min(nproc, 4)` | number of Kestrel processes |
 | `TOTAL_HEAP_PCT` | `80` | total GC heap budget as % of RAM, split across workers |
 | `DB_POOL` | `min(256, 16 × cores)` | total Postgres connections across all workers |
 | `DB_POOL_READ` / `DB_POOL_WRITE` | 3:1 split | per-worker pool split; keep the app total at ≤ 512 |
