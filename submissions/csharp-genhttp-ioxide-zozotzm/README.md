@@ -88,7 +88,7 @@ kernel socket memory, inside the 32 GB box but tight.
 ## Build and run
 
 ```bash
-sudo bash install.sh                 # .NET 11 SDK if missing
+sudo bash install.sh                 # .NET 10 SDK if missing
 bash build.sh                        # dotnet publish -c Release -o out
 DATABASE_URL=postgres://user:pass@db:5432/feed \
 JWT_SECRET=million-users-challenge HOST=0.0.0.0 PORT=80 EXTRA_PORT=81 \
