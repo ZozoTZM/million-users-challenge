@@ -96,6 +96,12 @@ Optional:
 | `IOXIDE_REACTORS` | `Environment.ProcessorCount` | io_uring reactors (one per core by default) |
 | `DATABASE_MAX_CONN` | `256` | total Postgres connections across reactors, max 8 per reactor |
 | `DOTNET_GCHeapHardLimitPercent` | `0x50` (80%) | GC heap hard limit |
+| `THREADPOOL_SPIN_THRESHOLD` | unset | maps to `DOTNET_ThreadPool_SpuriousDispatchNoSpinThreshold` |
+| `THREADPOOL_KEEPALIVE` | unset | maps to `DOTNET_ThreadPool_ThreadsToKeepAlive` |
+
+The project sets `runtime-async=on` from the HttpArena reference. dotnet/runtime#135738 reports
+runtime-async regressions for suspending awaits in .NET 11 RC2/GA; remove that property for an A/B if
+the VM shows a regression.
 
 ## Attribution
 
