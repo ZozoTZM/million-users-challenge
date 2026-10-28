@@ -85,6 +85,10 @@ the 4-core score; the database is on separate cores and is not the server's bott
 72 MB to 453 MB, i.e. **~19.0 KB per idle connection**. At 1M that is ~19 GB of server RSS before
 kernel socket memory, inside the 32 GB box but tight.
 
+`ReactorOptions.RecvBufferSize = 4 KB` and `TcpTransportOptions.WriteSlabSize = 8 KB` did not change
+the idle cost in a local A/B, so the 19 KB is GenHTTP/ioxide per-connection state rather than a
+simple buffer knob. Going below it would need a different HTTP layer.
+
 ## Build and run
 
 ```bash
