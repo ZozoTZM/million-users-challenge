@@ -54,8 +54,9 @@ macOS fallback.
 
 ### Local benchmark (not the benchmark box)
 
-20,000 users, `-gzip -think-scale 0.1`, 30 s ramp, 60 s hold, tuned WSL PostgreSQL 16, mload and
-Postgres sharing the same 16-core / 16 GB box:
+The first table is the earlier .NET 11/all-in-one reference (mload and Postgres sharing the server's
+cores). The pinned .NET 10 result below it is the relevant one for the first submission. 20,000 users,
+`-gzip -think-scale 0.1`, 30 s ramp, 60 s hold, tuned WSL PostgreSQL 16:
 
 | Variant | req/s | p95 | p99 |
 |---|---:|---:|---:|
