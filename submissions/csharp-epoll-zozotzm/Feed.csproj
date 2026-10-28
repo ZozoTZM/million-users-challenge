@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+    <AssemblyName>feed</AssemblyName>
+    <RootNamespace>Feed</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup Condition="$(RuntimeIdentifier.StartsWith('linux'))">
+    <DirectPInvoke Include="libc" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'linux-x64'">
+    <IlcInstructionSet Condition="'$(IsAot)' == 'true'">x86-64-v3</IlcInstructionSet>
+  </PropertyGroup>
+
+</Project>

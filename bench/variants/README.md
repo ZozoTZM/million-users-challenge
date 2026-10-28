@@ -13,7 +13,7 @@ The extra entries here exist to answer build/runtime questions, not to become ex
 
 ## Build variants
 
-All four C# submissions now take `AOT=1` on `build.sh` and run the native executable from
+All five C# submissions now take `AOT=1` on `build.sh` and run the native executable from
 `start.sh` when it is present.
 
 ```bash
@@ -38,6 +38,8 @@ Local correctness results for the AOT builds:
 | GenHTTP/ioxide, AOT | 42/42 (GenHTTP trim/AOT warnings at publish) |
 | Lean raw ioxide, JIT | 42/42 |
 | Lean raw ioxide, AOT | 42/42 |
+| Own epoll, JIT | 42/42 |
+| Own epoll, AOT | 42/42 |
 
 AOT is not assumed to be faster. These builds exist so the VM can compare AOT against JIT/PGO with
 the same code and the same load.
@@ -88,10 +90,24 @@ GenHTTP is the full-framework io_uring comparison. It is not the max-C# candidat
 `IOXIDE_WRITE_SLAB_KB` defaults to 4. `IOXIDE_LEAN_GZIP` defaults to 1. The pool split is controlled
 by `DATABASE_MAX_CONN` and `DATABASE_POOL_PER_REACTOR_MAX`.
 
+### Our max-C# epoll
+
+| ID | Directory | Build | Runtime | Question |
+|---|---|---|---|---|
+| `epoll-own-jit` | `submissions/csharp-epoll-zozotzm` | JIT | gzip on, pool 64 | our own epoll/binary-PG implementation |
+| `epoll-own-aot` | same | AOT | gzip on, pool 64 | AOT effect |
+| `epoll-own-jit-gzip0` | same | JIT | `GZIP=0` | gzip cost |
+| `epoll-own-aot-gzip0` | same | AOT | `GZIP=0` | AOT + no gzip |
+| `epoll-own-jit-pool32` | same | JIT | `DB_POOL=32` | fewer readers |
+| `epoll-own-jit-pool128` | same | JIT | `DB_POOL=128` | more readers |
+
+This is our hand-written epoll entry: own HTTP parser, own binary Postgres wire client, one reader
+pool + one writer per loop. It currently uses one in-flight query per read connection; read batching
+and write group commit are the next tuning step.
+
 ### Epoll reference baselines
 
-These are external PRs, not our submissions. They are here to establish the epoll/AOT bar before we
-commit our own max-C# implementation:
+These are external PRs, not our submissions. They establish the epoll/AOT bar:
 
 ```bash
 mkdir -p bench/variants/external
@@ -127,6 +143,8 @@ on separate machines/cores.
 - `genhttp-aot`
 - `lean-jit`
 - `lean-aot`
+- `epoll-own-jit`
+- `epoll-own-aot`
 - PR #31 epoll AOT
 - PR #31 epoll JIT
 
@@ -184,9 +202,11 @@ Load:
 For 16 cores `-users 1000000` is the cap; for 8/4 cores start at 1M and increase only after a clean
 pass. Use separate machines for server, Postgres and mload; do not compare VMs sharing one host.
 
-## What is still missing
+## Status of the max-C# entry
 
-The matrix currently has **io_uring + epoll reference**, but not our own epoll max-C# submission.
-The next implementation is the working epoll/NativeAOT entry with binary Postgres, short read
-batches and group-committed writes. The external PR #31 build is the baseline to beat, not a
-submission candidate.
+`submissions/csharp-epoll-zozotzm` now exists and passes 42/42 in JIT and NativeAOT builds. It has
+the 40-byte connection table, own HTTP parser, binary Postgres, multiple readers + one writer per
+loop, `TCP_DEFER_ACCEPT`, and optional gzip.
+
+The remaining performance work is Java-style read batching and write group commit. The external
+PR #31 build stays in the matrix as the architecture baseline to beat.
