@@ -93,7 +93,7 @@ simple buffer knob. Going below it would need a different HTTP layer.
 
 ```bash
 sudo bash install.sh                 # .NET 10 SDK if missing
-bash build.sh                        # dotnet publish -c Release -o out
+bash build.sh                        # JIT; AOT=1 bash build.sh for NativeAOT
 DATABASE_URL=postgres://user:pass@db:5432/feed \
 JWT_SECRET=million-users-challenge HOST=0.0.0.0 PORT=80 EXTRA_PORT=81 \
 bash start.sh

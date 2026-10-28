@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>FeedApi</RootNamespace>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Npgsql" Version="10.0.3" />
+    <PackageReference Include="Npgsql.DependencyInjection" Version="10.0.3" />
+  </ItemGroup>
+
+  <!-- dev/ is an optional Aspire AppHost for local work; it is not part of the submission binary. -->
+  <ItemGroup>
+    <Compile Remove="dev/**/*.cs" />
+    <Content Remove="dev/**" />
+    <None Remove="dev/**" />
+  </ItemGroup>
+
+</Project>

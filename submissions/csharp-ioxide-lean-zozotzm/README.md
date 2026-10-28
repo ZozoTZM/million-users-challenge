@@ -86,7 +86,7 @@ was ~19 KB and Kestrel ~13.2 KB; Rust's no-buffer design is ~1.2 KB.
 
 ```bash
 sudo bash install.sh
-bash build.sh
+bash build.sh                 # JIT; AOT=1 bash build.sh for the NativeAOT A/B
 DATABASE_URL=postgres://user:pass@db:5432/feed \
 JWT_SECRET=million-users-challenge HOST=0.0.0.0 PORT=80 EXTRA_PORT=81 \
 bash start.sh
