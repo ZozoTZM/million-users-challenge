@@ -165,6 +165,9 @@ Optional knobs:
 | `TOTAL_HEAP_PCT` | `80` | total GC heap budget as % of RAM, split across workers |
 | `DB_POOL` | `min(256, 16 × cores)` | total Postgres connections across all workers |
 | `DB_POOL_READ` / `DB_POOL_WRITE` | 3:1 split | per-worker pool split; keep the app total at ≤ 512 |
+| `THREADPOOL_SPIN_THRESHOLD` | unset | maps to `DOTNET_ThreadPool_SpuriousDispatchNoSpinThreshold` |
+| `THREADPOOL_KEEPALIVE` | unset | maps to `DOTNET_ThreadPool_ThreadsToKeepAlive` |
+| `GC_DATAS` / `GC_TARGET_TCP` / `GC_GEN0_GROWTH` | unset | DATAS A/B knobs |
 
 If memory is tight, lower `TOTAL_HEAP_PCT` or `WORKERS`; if the app is CPU/latency bound at 16 cores,
 try more workers or a larger `DB_POOL`.

@@ -20,6 +20,16 @@ fi
 if [ -n "${THREADPOOL_KEEPALIVE:-}" ]; then
   export DOTNET_ThreadPool_ThreadsToKeepAlive="$THREADPOOL_KEEPALIVE"
 fi
+# DATAS knobs (default is runtime-selected): 0 disables DATAS, 1 enables it.
+if [ -n "${GC_DATAS:-}" ]; then
+  export DOTNET_GCDynamicAdaptationMode="$GC_DATAS"
+fi
+if [ -n "${GC_TARGET_TCP:-}" ]; then
+  export DOTNET_GCDTargetTCP="$GC_TARGET_TCP"
+fi
+if [ -n "${GC_GEN0_GROWTH:-}" ]; then
+  export DOTNET_GCDGen0GrowthPercent="$GC_GEN0_GROWTH"
+fi
 
 cores="$(nproc 2>/dev/null || getconf _NPROCESSORS_ONLN 2>/dev/null || echo 1)"
 # Local A/B: 4 workers beat 8 (8 workers unevenly pinned one core and added ~20% CPU/request).
