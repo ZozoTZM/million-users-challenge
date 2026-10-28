@@ -10,4 +10,7 @@ export DOTNET_CLI_TELEMETRY_OPTOUT=1
 export DOTNET_GCHeapHardLimitPercent="${DOTNET_GCHeapHardLimitPercent:-0x50}"
 
 cd "$HERE/out"
+if [ -x FeedApi ]; then
+  exec ./FeedApi
+fi
 exec dotnet FeedApi.dll
