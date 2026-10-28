@@ -90,6 +90,12 @@ is faster locally at this stress load, but it is a separate submission.
 ~3.58 of 4 cores, Postgres ~6.3 of 8, mload ~1.85 of 4. The server, not the database, is the local
 limit.
 
+Idle memory: 20,000 idle keep-alive connections after one `/health` each cost
+**~13.2 KB/connection** (102 MB → 360 MB RSS), so ~13 GB at 1M before kernel memory. A 4 KB
+request/response/transport-buffer variant lowered that to ~10.4 KB/connection, but its pinned 4-core
+p95 was 451 ms instead of 405 ms. The 16 KB buffers are kept: 1M at 13 GB already fits, and the tail
+latency matters more.
+
 These are local stress numbers, not a claim about the 16-core benchmark boxes or 1M connections.
 
 ## Build and run
