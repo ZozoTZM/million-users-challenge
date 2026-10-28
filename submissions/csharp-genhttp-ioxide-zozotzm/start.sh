@@ -18,4 +18,7 @@ if [ -n "${THREADPOOL_KEEPALIVE:-}" ]; then
 fi
 
 cd "$HERE/out"
+if [ -x FeedApi ]; then
+  exec ./FeedApi
+fi
 exec dotnet FeedApi.dll

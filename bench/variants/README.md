@@ -19,7 +19,12 @@ All four C# submissions now take `AOT=1` on `build.sh` and run the native execut
 ```bash
 AOT=0 bash build.sh     # framework-dependent JIT
 AOT=1 bash build.sh     # Linux x64 NativeAOT, OptimizationPreference=Speed
+AOT=1 AOT_ISA=x86-64-v3 bash build.sh   # AOT tuned for the benchmark host ISA
 ```
+
+AOT is not assumed to be faster. These builds exist so the VM can compare AOT against JIT/PGO with
+the same code and the same load. Run both the generic AOT and the `x86-64-v3` AOT if the host CPU
+supports AVX2; the latter is the fair comparison to JIT on the same box.
 
 Local correctness results for the AOT builds:
 
