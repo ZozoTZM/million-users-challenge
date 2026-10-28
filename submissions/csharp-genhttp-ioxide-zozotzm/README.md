@@ -12,7 +12,7 @@ middle experiment is `csharp-aspnet-multiprocess-zozotzm`.
 
 | Piece | Version |
 |---|---|
-| Runtime | .NET 11 (`net11.0`), `runtime-async=on` |
+| Runtime | .NET 10 (`net10.0`); GenHTTP 11.1.0 ships net10 assets |
 | Web framework | GenHTTP 11.1.0 (`GenHTTP.Engine.Ioxide`, `GenHTTP.Modules.IO`, `GenHTTP.Modules.Compression`) |
 | Engine | ioxide 0.15.251, one io_uring reactor per usable CPU |
 | Postgres | `ioxide.pg` 0.15.251, per-reactor ring-native pool |
@@ -42,7 +42,7 @@ macOS fallback.
 
 ## Local validation
 
-- Exact CI path on Ubuntu 24.04 WSL, .NET 11.0.100-rc.3, PostgreSQL 16 with benchmark-like settings:
+- Exact CI path on Ubuntu 24.04 WSL, .NET SDK 10.0.403, PostgreSQL 16 with benchmark-like settings:
   `PORT=3700 EXTRA_PORT=3701 bash test/run.sh submissions/csharp-genhttp-ioxide-zozotzm`
   → **passed=42 failed=0**.
 - The golden `/feed` and `/posts/:id` bytes match exactly; `created_at` truncates to milliseconds.
@@ -73,6 +73,11 @@ natural default for a 16-core app box.
 A `pidstat` window during the 16-reactor run showed server ~3.35 cores, Postgres ~7.4 cores and
 mload ~2.0 cores. The server is not the local bottleneck; the shared Postgres is.
 
+**Pinned 4-core server, .NET 10** (server CPUs 0-3, Postgres 4-11, mload 12-15; 20k users,
+`-think-scale 0.1`, 60 s hold): **17,324 req/s, p95 81.5 ms, p99 231.7 ms, 0 errors**. Server used
+~2.96 of 4 cores, Postgres ~6.4 of 8, mload ~2.2 of 4. This is the most relevant local comparison for
+the 4-core score; the database is on separate cores and is not the server's bottleneck.
+
 ### Idle-connection memory
 
 20,000 idle keep-alive connections after one `/health` each, 16 reactors: server RSS went from
@@ -99,9 +104,8 @@ Optional:
 | `THREADPOOL_SPIN_THRESHOLD` | unset | maps to `DOTNET_ThreadPool_SpuriousDispatchNoSpinThreshold` |
 | `THREADPOOL_KEEPALIVE` | unset | maps to `DOTNET_ThreadPool_ThreadsToKeepAlive` |
 
-The project sets `runtime-async=on` from the HttpArena reference. dotnet/runtime#135738 reports
-runtime-async regressions for suspending awaits in .NET 11 RC2/GA; remove that property for an A/B if
-the VM shows a regression.
+This is the .NET 10 build. The HttpArena reference uses .NET 11 with `runtime-async=on`; the .NET 11
+variant is kept on a separate branch for the later release, where runtime-async (#135738) can be A/B'd.
 
 ## Attribution
 
