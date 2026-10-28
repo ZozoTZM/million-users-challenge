@@ -23,7 +23,10 @@ var jwtSecret = Env("JWT_SECRET");
 
 App.Configure(jwtSecret);
 Postgres.Configure(reactors, maxDbConnections);
-var effectiveDbConnections = Math.Min(maxDbConnections, reactors * 8);
+var perReactorMax = int.TryParse(Environment.GetEnvironmentVariable("DATABASE_POOL_PER_REACTOR_MAX"), out var pmax)
+    ? Math.Clamp(pmax, 1, 128)
+    : 32;
+var effectiveDbConnections = Math.Min(maxDbConnections, reactors * perReactorMax);
 Console.WriteLine($"feed-api genhttp-ioxide reactors={reactors} ports={port},{extraPort?.ToString() ?? "-"} db_pool_total={effectiveDbConnections}");
 
 var address = IPAddress.TryParse(hostName, out var parsed) ? parsed : IPAddress.Any;
@@ -53,3 +56,4 @@ static string Env(string name, string? fallback = null) =>
     Environment.GetEnvironmentVariable(name) is { Length: > 0 } value
         ? value
         : fallback ?? throw new InvalidOperationException($"missing required environment variable {name}");
+

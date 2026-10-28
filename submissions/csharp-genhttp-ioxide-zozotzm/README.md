@@ -104,7 +104,8 @@ Optional:
 | Env | Default | Meaning |
 |---|---|---|
 | `IOXIDE_REACTORS` | `Environment.ProcessorCount` | io_uring reactors (one per core by default) |
-| `DATABASE_MAX_CONN` | `256` | total Postgres connections across reactors, max 8 per reactor |
+| `DATABASE_MAX_CONN` | `256` | total Postgres connections across reactors |
+| `DATABASE_POOL_PER_REACTOR_MAX` | `32` | per-reactor cap (raise for a VM A/B; Rust uses 16 read + 16 write per 4-core thread) |
 | `DOTNET_GCHeapHardLimitPercent` | `0x50` (80%) | GC heap hard limit |
 | `THREADPOOL_SPIN_THRESHOLD` | unset | maps to `DOTNET_ThreadPool_SpuriousDispatchNoSpinThreshold` |
 | `THREADPOOL_KEEPALIVE` | unset | maps to `DOTNET_ThreadPool_ThreadsToKeepAlive` |
@@ -116,3 +117,4 @@ variant is kept on a separate branch for the later release, where runtime-async 
 
 The engine setup and ioxide.pg wiring follow the public HttpArena `genhttp-ioxide` reference
 (`MDA2AV/HttpArena`), adapted to this challenge's API and single-statement SQL contract.
+

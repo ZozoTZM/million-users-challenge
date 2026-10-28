@@ -61,6 +61,9 @@ internal static class Postgres
 
         var uri = new Uri(url);
         var userInfo = uri.UserInfo.Split(':', 2);
+        var perReactorMax = int.TryParse(Environment.GetEnvironmentVariable("DATABASE_POOL_PER_REACTOR_MAX"), out var max)
+            ? Math.Clamp(max, 1, 128)
+            : 32;
 
         _options = new PgOptions
         {
@@ -69,9 +72,10 @@ internal static class Postgres
             User = Uri.UnescapeDataString(userInfo[0]),
             Password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : null,
             Database = Uri.UnescapeDataString(uri.AbsolutePath.TrimStart('/')),
-            // The reference entry caps a reactor's ring-native pool at 8. With 16 reactors that
-            // is 128 connections, well below the challenge's 512 limit.
-            PoolSize = Math.Clamp(maxConnections / Math.Max(reactors, 1), 1, 8),
+            // The HttpArena reference caps a reactor's ring-native pool at 8. The challenge allows
+            // more, and Rust's entry uses 16 read + 16 write per 4-core thread; DATABASE_POOL_PER_REACTOR_MAX
+            // raises the cap for the A/B without changing the default.
+            PoolSize = Math.Clamp(maxConnections / Math.Max(reactors, 1), 1, perReactorMax),
             CommandTimeoutMs = 5000,
         };
     }
@@ -116,3 +120,4 @@ internal static class Postgres
         return host;
     }
 }
+
