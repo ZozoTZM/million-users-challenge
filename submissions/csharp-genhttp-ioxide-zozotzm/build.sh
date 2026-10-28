@@ -3,4 +3,5 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 export DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1
+rm -rf out
 dotnet publish FeedApi.csproj -c Release -o out
