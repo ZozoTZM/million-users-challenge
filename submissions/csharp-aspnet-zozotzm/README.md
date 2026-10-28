@@ -56,7 +56,7 @@ The SQL, schema, JSON wire shape and error contract are unchanged.
 
 ## Local validation
 
-Run on Linux (Ubuntu 24.04 WSL, .NET SDK 10.0.403, PostgreSQL 16), not on the benchmark boxes:
+Run on Linux (Ubuntu 24.04 WSL, .NET SDK 11.0.100-rc.3, PostgreSQL 16), not on the benchmark boxes:
 
 - Exact CI path:
   `PORT=3400 EXTRA_PORT=3401 bash test/run.sh submissions/csharp-aspnet-zozotzm`
@@ -65,11 +65,21 @@ Run on Linux (Ubuntu 24.04 WSL, .NET SDK 10.0.403, PostgreSQL 16), not on the be
   naming are correct.
 - The Aspire dev host builds against this project; `test/run.sh` is the stronger check.
 
-### Local A/B (not the benchmark box)
+### .NET 11 thread-pool setting
 
-20,000 users, `-gzip -think-scale 0.1`, 30 s ramp, 60 s hold, tuned local PostgreSQL 16, everything on
-one 16-core / 16 GB WSL box. The load generator, server and Postgres share the same cores, so this is a
-stress comparison, not a capacity result.
+This branch now targets **.NET 11**. The new thread-pool parking heuristic from
+dotnet/runtime#132765 / issue #135855 can materially change throughput in low-saturation,
+many-connection workloads; `DOTNET_ThreadPool_SpuriousDispatchNoSpinThreshold` (`0` vs `32767` in the
+issue) and `DOTNET_ThreadPool_ThreadsToKeepAlive` (`-1`) are the knobs. `start.sh` leaves the runtime
+default in place and accepts `THREADPOOL_SPIN_THRESHOLD` / `THREADPOOL_KEEPALIVE` for A/B runs on the
+VMs. Runtime-async is intentionally not enabled in this ASP.NET submission (see dotnet/runtime#135738).
+
+### Local A/B (not the benchmark box; .NET 10 build)
+
+The numbers below were collected on the previous .NET 10 build. They are kept as the .NET 10
+reference; the .NET 11 run waits for the VMs. 20,000 users, `-gzip -think-scale 0.1`, 30 s ramp, 60 s
+hold, tuned local PostgreSQL 16, everything on one 16-core / 16 GB WSL box. The load generator,
+server and Postgres share the same cores, so this is a stress comparison, not a capacity result.
 
 | Variant | req/s | p95 | p99 |
 |---|---:|---:|---:|
@@ -105,8 +115,9 @@ Optional:
 | `DOTNET_GCHeapHardLimitPercent` | `0x50` (80%) | GC heap hard limit |
 
 Knobs from the .NET performance playbook that are **not** enabled here: DATAS off,
-`DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS`, thread-pool hill-climbing changes, NativeAOT. They are
-worth an A/B on the real box, but they change behavior and were not measured on the target hardware.
+`DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS`, thread-pool hill-climbing changes, runtime-async,
+NativeAOT. The .NET 11 thread-pool knobs are exposed through `start.sh` for the VM A/B. They change
+behavior and were not measured on the target hardware.
 
 ## Files
 
