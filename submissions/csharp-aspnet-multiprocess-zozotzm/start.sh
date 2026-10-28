@@ -12,6 +12,15 @@ export DOTNET_GCNoAffinitize="${DOTNET_GCNoAffinitize:-1}"
 # Local A/B: inline completions made this workload slower; default off.
 export DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS="${DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS:-0}"
 
+# .NET 11 thread-pool parking heuristic. Leave the runtime default unless the VM
+# benchmark says otherwise (dotnet/runtime#135855); these aliases make the A/B easy.
+if [ -n "${THREADPOOL_SPIN_THRESHOLD:-}" ]; then
+  export DOTNET_ThreadPool_SpuriousDispatchNoSpinThreshold="$THREADPOOL_SPIN_THRESHOLD"
+fi
+if [ -n "${THREADPOOL_KEEPALIVE:-}" ]; then
+  export DOTNET_ThreadPool_ThreadsToKeepAlive="$THREADPOOL_KEEPALIVE"
+fi
+
 cores="$(nproc 2>/dev/null || getconf _NPROCESSORS_ONLN 2>/dev/null || echo 1)"
 # Local A/B: 4 workers beat 8 (8 workers unevenly pinned one core and added ~20% CPU/request).
 workers="${WORKERS:-$(( cores < 4 ? cores : 4 ))}"

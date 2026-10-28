@@ -1,7 +1,7 @@
 # csharp-aspnet-multiprocess-zozotzm
 
-The challenge feed API on the standard C# stack: **ASP.NET Core / Kestrel, Npgsql, System.Text.Json**.
-No hand-written HTTP, no custom Postgres protocol, no unsafe code, no caching.
+The challenge feed API on the standard C# stack: **ASP.NET Core / Kestrel on .NET 11, Npgsql,
+System.Text.Json**. No hand-written HTTP, no custom Postgres protocol, no unsafe code, no caching.
 
 This is deliberately **not** the usual C# deployment shape. Microsoft's eShop, Jellyfin and Bitwarden
 all run one ASP.NET Core host per box or container. The conventional submission is
@@ -97,7 +97,7 @@ The changes above attack those three in order:
 
 All of this was run locally, not on the 16-core benchmark boxes.
 
-- Exact CI path in Linux (Ubuntu 24.04 WSL, .NET SDK 10.0.403, PostgreSQL 16):
+- Exact CI path in Linux (Ubuntu 24.04 WSL, .NET SDK 11.0.100-rc.3, PostgreSQL 16):
   `WORKERS=4 PORT=3600 EXTRA_PORT=3601 bash test/run.sh submissions/csharp-aspnet-multiprocess-zozotzm`
   → **passed=42 failed=0**, with the default 4 workers.
 - Same suite against the Aspire dev host (single worker, PostgreSQL 18 container): **42/42**.
@@ -111,11 +111,20 @@ All of this was run locally, not on the 16-core benchmark boxes.
   server RSS went from 171 MB to 520 MB, i.e. **~17.8 KB per idle connection**. At 1M that is ~18 GB
   of server RSS, before kernel socket memory. This is the number the design is optimizing.
 
-### Local A/B (not the benchmark box)
+### .NET 11 thread-pool setting
 
-20,000 users, `-gzip -think-scale 0.1`, 30 s ramp, 60 s hold, tuned local PostgreSQL 16, everything on
-one 16-core / 16 GB WSL box. The load generator, server and Postgres share the same cores, so this is a
-stress comparison, not a capacity result.
+This branch now targets **.NET 11**. `DOTNET_ThreadPool_SpuriousDispatchNoSpinThreshold` (new in the
+#132765 parking heuristic; issue #135855 shows `0` vs `32767` changing results substantially) and
+`DOTNET_ThreadPool_ThreadsToKeepAlive` are exposed as `THREADPOOL_SPIN_THRESHOLD` /
+`THREADPOOL_KEEPALIVE` in `start.sh`. The runtime default is left in place until the VM A/B. Runtime-async
+is not enabled (see dotnet/runtime#135738).
+
+### Local A/B (not the benchmark box; .NET 10 build)
+
+The numbers below are from the previous .NET 10 build and are kept as the .NET 10 reference; the .NET 11
+run waits for the VMs. 20,000 users, `-gzip -think-scale 0.1`, 30 s ramp, 60 s hold, tuned local
+PostgreSQL 16, everything on one 16-core / 16 GB WSL box. The load generator, server and Postgres share
+the same cores, so this is a stress comparison, not a capacity result.
 
 | Variant | req/s | p95 | p99 |
 |---|---:|---:|---:|
@@ -141,7 +150,7 @@ at 660k–1M yet. The 1M estimate above is an extrapolation.
 ## Build and run
 
 ```bash
-sudo bash install.sh                 # .NET 10 SDK if missing
+sudo bash install.sh                 # .NET 11 SDK if missing
 bash build.sh                        # dotnet publish -c Release -o out
 DATABASE_URL=postgres://user:pass@db:5432/feed \
 JWT_SECRET=million-users-challenge HOST=0.0.0.0 PORT=80 EXTRA_PORT=81 \
