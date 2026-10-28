@@ -10,4 +10,7 @@ export DOTNET_gcServer="${DOTNET_gcServer:-1}"
 export DOTNET_GCHeapHardLimitPercent="${DOTNET_GCHeapHardLimitPercent:-0x50}"
 
 cd "$HERE/out"
+if [ -x LeanApi ]; then
+  exec ./LeanApi
+fi
 exec dotnet LeanApi.dll
