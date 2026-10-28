@@ -85,6 +85,11 @@ GC; source generation did not produce a clear throughput win here, but it remove
 hot path and is a low-risk modern default. The multiprocess variant (4 workers, inline completions off)
 is faster locally at this stress load, but it is a separate submission.
 
+**Pinned 4-core server, .NET 10** (server CPUs 0-3, Postgres 4-11, mload 12-15; 20k users,
+`-think-scale 0.1`, 60 s hold): **13,707 req/s, p95 404.6 ms, p99 451.4 ms, 0 errors**; server used
+~3.58 of 4 cores, Postgres ~6.3 of 8, mload ~1.85 of 4. The server, not the database, is the local
+limit.
+
 These are local stress numbers, not a claim about the 16-core benchmark boxes or 1M connections.
 
 ## Build and run
