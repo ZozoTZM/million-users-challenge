@@ -19,6 +19,16 @@ fi
 if [ -n "${THREADPOOL_KEEPALIVE:-}" ]; then
   export DOTNET_ThreadPool_ThreadsToKeepAlive="$THREADPOOL_KEEPALIVE"
 fi
+# DATAS knobs (default is runtime-selected): 0 disables DATAS, 1 enables it.
+if [ -n "${GC_DATAS:-}" ]; then
+  export DOTNET_GCDynamicAdaptationMode="$GC_DATAS"
+fi
+if [ -n "${GC_TARGET_TCP:-}" ]; then
+  export DOTNET_GCDTargetTCP="$GC_TARGET_TCP"
+fi
+if [ -n "${GC_GEN0_GROWTH:-}" ]; then
+  export DOTNET_GCDGen0GrowthPercent="$GC_GEN0_GROWTH"
+fi
 
 cd "$HERE/out"
 exec dotnet FeedApi.dll

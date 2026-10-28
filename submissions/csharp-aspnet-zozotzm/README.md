@@ -113,6 +113,11 @@ Optional:
 |---|---|---|
 | `DB_POOL` | `min(256, 16 × cores)` | total Postgres connections (max 512) |
 | `DOTNET_GCHeapHardLimitPercent` | `0x50` (80%) | GC heap hard limit |
+| `THREADPOOL_SPIN_THRESHOLD` | unset | maps to `DOTNET_ThreadPool_SpuriousDispatchNoSpinThreshold`; try `0` and `32767` |
+| `THREADPOOL_KEEPALIVE` | unset | maps to `DOTNET_ThreadPool_ThreadsToKeepAlive`; `-1` keeps workers |
+| `GC_DATAS` | unset | maps to `DOTNET_GCDynamicAdaptationMode` (`0`/`1`) |
+| `GC_TARGET_TCP` | unset | maps to `DOTNET_GCDTargetTCP` (percent) |
+| `GC_GEN0_GROWTH` | unset | maps to `DOTNET_GCDGen0GrowthPercent` |
 
 Knobs from the .NET performance playbook that are **not** enabled here: DATAS off,
 `DOTNET_SYSTEM_NET_SOCKETS_INLINE_COMPLETIONS`, thread-pool hill-climbing changes, runtime-async,
